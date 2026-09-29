@@ -5,6 +5,8 @@ const DATA={
  talents:{10:{skill:.0626,blood:1.152,burst:6.1744},13:{skill:.0715,blood:1.36,burst:7.0597}},
  normal:.8365,charged:2.4256,weaponAtk:608.0745972,
  furinaLevels:{90:15307.39,95:15850.78,100:16395.36},
+ xilonenLevels:{90:929.95,95:962.96,100:996.05},
+ xilonenWeapon:{def:[8,10,12,14,16],rate:[8,10,12,14,16],cap:[25.6,32,38.4,44.8,51.2]},
  homa:[{hp:20,atk:.018},{hp:25,atk:.022},{hp:30,atk:.026},{hp:35,atk:.030},{hp:40,atk:.034}],
  homaAbove50:[.008,.010,.012,.014,.016],
  elegy:{em:[100,125,150,175,200],atk:[20,25,30,35,40]},
