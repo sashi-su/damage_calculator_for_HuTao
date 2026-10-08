@@ -24,6 +24,7 @@
     'healing'
   ]);
   const defaultMains = { flower: 'hp', plume: 'atk', sand: 'em', goblet: 'pyro', circlet: 'cr' };
+  const subValueLimits = { hp: 2000, hpPct: 50, atk: 150, atkPct: 50, em: 150, cr: 50, cd: 50 };
   function mount({
     readInputs,
     readCurrentTotal,
@@ -303,9 +304,11 @@
       const main = $('artifact-main').value;
       for (let index = 0; index < 4; index++) {
         const select = $('artifact-sub-' + index),
-          wrap = $('artifact-sub-' + index + '-value').parentElement,
+          input = $('artifact-sub-' + index + '-value'),
+          wrap = input.parentElement,
           percent = percentTypes.has(select.value);
         for (const option of select.options) option.disabled = option.value !== '' && option.value === main;
+        input.max = String(subValueLimits[select.value] ?? 150);
         wrap.classList.toggle('has-unit', percent);
         wrap.querySelector('.unit').hidden = !percent;
         subTypes[index] = select.value;
@@ -329,6 +332,8 @@
         otherInput.value = previousValue;
       }
       updateSubControls();
+      if (selected) normalizeSubValue($('artifact-sub-' + index + '-value'));
+      if (otherIndex !== undefined && previous) normalizeSubValue($('artifact-sub-' + otherIndex + '-value'));
       clearErrors();
     }
     function resetSubs() {
@@ -411,7 +416,7 @@
     function normalizeSubValue(input) {
       if (input.validity.badInput || input.value === '' || !Number.isFinite(Number(input.value))) return;
       const value = Number(input.value),
-        bounded = Math.min(150, Math.max(0, value));
+        bounded = Math.min(Number(input.max), Math.max(0, value));
       if (bounded === 0 || bounded !== value) {
         input.value = bounded === 0 ? '' : String(bounded);
         clearErrors();
