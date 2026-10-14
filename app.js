@@ -76,6 +76,40 @@ function field(
   }
   $(parent).append(el);
 }
+function syncResponsiveSliders(mobile) {
+  // Both controls store option indices, keeping read/save/restore semantics identical.
+  // The analysis-only Yelan slider is outside definitions and stays a slider.
+  for (const definition of definitions) {
+    if (!definition.slider) continue;
+    const previous = $(definition.id);
+    if (mobile ? previous.tagName === 'SELECT' : previous.type === 'range') continue;
+    const control = document.createElement(mobile ? 'select' : 'input');
+    control.id = definition.id;
+    if (mobile) {
+      definition.options.forEach((option, index) => {
+        const choice = document.createElement('option');
+        choice.value = String(index);
+        choice.textContent = String(Array.isArray(option) ? option[1] : option);
+        control.append(choice);
+      });
+    } else {
+      control.type = 'range';
+      control.min = '0';
+      control.max = String(definition.options.length - 1);
+      control.step = '1';
+    }
+    for (const name of ['aria-describedby', 'aria-label', 'aria-labelledby']) {
+      const value = previous.getAttribute(name);
+      if (value !== null) control.setAttribute(name, value);
+    }
+    control.value = previous.value;
+    control.disabled = previous.disabled;
+    const focused = document.activeElement === previous;
+    previous.replaceWith(control);
+    updateSliderValue(definition.id);
+    if (focused) control.focus({ preventScroll: true });
+  }
+}
 const addHutaoField = (id, label, value, options = {}) => field('hutao-fields', id, label, value, options);
 for (const { id, label, value, ...options } of CONTENT.forms.hutao.fields)
   addHutaoField(id, label, value, options);
@@ -172,7 +206,7 @@ function observedInput(inputId, conditionIds, copyKey) {
   inputLabel.textContent = common.observed.replace('{stat}', statName);
   const converted = document.createElement('div');
   converted.className = 'stat-converted';
-  converted.innerHTML = `<span class="text-secondary">${common.converted.replace('{stat}', statName)}</span><div class="stat-converted-value card-inner"><output id="${inputId}-converted"></output></div>`;
+  converted.innerHTML = `<span class="text-standard">${common.converted.replace('{stat}', statName)}</span><div class="stat-converted-value card-inner"><output id="${inputId}-converted"></output></div>`;
   const helpButton = document.createElement('button');
   helpButton.type = 'button';
   helpButton.className = 'help-button';
@@ -242,6 +276,7 @@ function observedInput(inputId, conditionIds, copyKey) {
 }
 function syncConditionSegments() {
   for (const radio of document.querySelectorAll('.stat-segment-choice input')) {
+    if (radio.dataset.presetGroup) continue;
     const select = $(radio.name.slice(0, -'-segment'.length));
     radio.checked = select.value === radio.value;
     radio.disabled = select.disabled;
@@ -262,7 +297,7 @@ const supportGroups = {
     ['fAfterYelan', 'fAfterXilonen']
   ],
   nico: [
-    ['nC', 'nBaseAtk', 'nAtk', 'nAtkPyroResonanceIncluded'],
+    ['nLevel', 'nC', 'nWeaponBaseAtk', 'nAtk', 'nAtkPyroResonanceIncluded'],
     ['nWeapon', 'nR', 'nSet'],
     ['nAfterElegy', 'nAfterXilonen']
   ],
@@ -301,13 +336,14 @@ const mobileCompactInputIds = [
   'cr',
   'cd',
   'em',
+  'gobletMain',
   'c6Rate',
   'yBuff',
   'cEm',
   'cCount',
   'cSet',
   'fHp',
-  'nBaseAtk',
+  'nWeaponBaseAtk',
   'nAtk',
   'nSet',
   'xDef',
@@ -478,6 +514,9 @@ for (let i = 0; i < 3; i++) {
   $('team-fields').append(card);
   supportCards.push(card);
 }
+const sliderMedia = window.matchMedia('(max-width:760px)');
+syncResponsiveSliders(sliderMedia.matches);
+sliderMedia.addEventListener('change', (event) => syncResponsiveSliders(event.matches));
 const INPUT_STORAGE_KEY = 'hutao-rotation-v1';
 const ANALYSIS_STORAGE_KEY = 'hutao-damage-memory-v1';
 let storageAvailable = true;
@@ -486,7 +525,7 @@ let damageRecords = [],
   damageRecordDraftLabel = '';
 let damageRecordFeedbackTimer = 0;
 try {
-  const savedInputs = JSON.parse(localStorage.getItem(INPUT_STORAGE_KEY) || 'null');
+  const savedInputs = SettingsPresets.migrateNicoInputs(JSON.parse(localStorage.getItem(INPUT_STORAGE_KEY) || 'null'));
   if (savedInputs && typeof savedInputs === 'object' && !Array.isArray(savedInputs)) {
     // Keep browser-saved inputs when field names change; settings codes migrate old fields separately.
     for (let index = 0; index < 3; index++) {
@@ -639,8 +678,9 @@ function read() {
         : option
       : d.check
         ? el.checked
-        : d.options && isNaN(Number(el.value))
-          ? el.value
+        : d.options
+          ? d.options.map((option) => Array.isArray(option) ? option[0] : option)
+              .find((value) => String(value) === el.value)
           : Number(el.value);
   }
   s.skill = s.constellation >= 3 ? 13 : 10;
@@ -648,6 +688,135 @@ function read() {
   s.team = [s.supportSlot1, s.supportSlot2, s.supportSlot3].filter((v) => v !== 'none');
   return s;
 }
+const PRESET_STORAGE_KEY = 'hutao-settings-presets-v1';
+const presetCopy = CONTENT.page.sections.other.presetNames;
+const presetLabels = presetCopy.groups;
+let presetState = SettingsPresets.create(read(), defaults);
+function applyPresetInputs(values) {
+  for (const [id, value] of Object.entries(values)) {
+    const definition = definitions.find((item) => item.id === id);
+    if (!definition) continue;
+    if (definition.check) $(id).checked = value;
+    else if (definition.slider)
+      $(id).value = definition.options.findIndex((option) => (Array.isArray(option) ? option[0] : option) === value);
+    else $(id).value = value;
+  }
+}
+try {
+  const savedPresets = JSON.parse(localStorage.getItem(PRESET_STORAGE_KEY) || 'null');
+  if (savedPresets) {
+    presetState = SettingsPresets.validate(savedPresets, definitions);
+    applyPresetInputs(SettingsPresets.activeInputs(presetState, {}));
+  }
+} catch {
+  storageAvailable = false;
+}
+function savePresets() {
+  try {
+    localStorage.setItem(PRESET_STORAGE_KEY, JSON.stringify(presetState));
+  } catch {
+    storageAvailable = false;
+  }
+}
+const presetControls = {};
+const presetStaging = document.createElement('div');
+presetStaging.hidden = true;
+$('support-fields').append(presetStaging);
+const presetNamesSection = document.createElement('section');
+presetNamesSection.className = 'preset-name-settings settings-subsection';
+presetNamesSection.innerHTML = '<h3></h3><p class="text-standard"></p><details open><summary class="text-primary-label"></summary><p class="text-meta"></p><div class="preset-name-groups"></div></details>';
+presetNamesSection.querySelector('h3').textContent = presetCopy.title;
+presetNamesSection.querySelector(':scope > p').textContent = presetCopy.description;
+presetNamesSection.querySelector('summary').textContent = presetCopy.expand;
+presetNamesSection.querySelector('details > p').textContent = presetCopy.note;
+document.querySelector('.stat-update-settings').after(presetNamesSection);
+function syncPresetControls() {
+  for (const [group, control] of Object.entries(presetControls)) {
+    const entry = presetState[group];
+    for (const radio of control.querySelectorAll('input')) {
+      radio.checked = Number(radio.value) === entry.selected;
+      radio.nextElementSibling.textContent = entry.names[Number(radio.value)];
+    }
+    for (let index = 0; index < 2; index++) $(`preset-name-${group}-${index}`).value = entry.names[index];
+  }
+}
+function switchPreset(group, index) {
+  if (presetState[group].selected === index) return;
+  // A preset switch applies saved values directly, without change events or stat prompts.
+  if (validate(read()).length) {
+    syncPresetControls();
+    return;
+  }
+  SettingsPresets.capture(presetState, read());
+  presetState[group].selected = index;
+  applyPresetInputs(presetState[group].values[index]);
+  syncPresetControls();
+  savePresets();
+  clearExportedSettingsCode();
+  render();
+  previousSettings = read();
+}
+for (const group of Object.keys(SettingsPresets.GROUPS)) {
+  const control = document.createElement('div');
+  control.className = 'stat-segment-choices settings-preset-choices';
+  control.setAttribute('role', 'radiogroup');
+  control.setAttribute('aria-label', presetCopy.selectionAria.replace('{group}', presetLabels[group]));
+  for (let index = 0; index < 2; index++) {
+    const choice = document.createElement('label');
+    choice.className = 'stat-segment-choice';
+    const radio = document.createElement('input'), caption = document.createElement('span');
+    radio.type = 'radio';
+    radio.name = `settings-preset-${group}`;
+    radio.value = index;
+    radio.dataset.presetGroup = group;
+    caption.className = 'text-muted-action';
+    radio.addEventListener('input', (event) => event.stopPropagation());
+    radio.addEventListener('change', (event) => {
+      event.stopPropagation();
+      switchPreset(group, index);
+    });
+    choice.append(radio, caption);
+    control.append(choice);
+  }
+  presetControls[group] = control;
+  if (group === 'custom') $('extra-fields').before(control);
+  else if (group === 'hutao') document.querySelector('#view-hutao .loadout-strip').before(control);
+  else presetStaging.append(control);
+  const nameGroup = document.createElement('section');
+  nameGroup.className = 'preset-name-group';
+  nameGroup.innerHTML = `<div id="preset-label-${group}" class="preset-name-group-label text-standard"></div><div class="preset-name-fields"></div>`;
+  nameGroup.firstElementChild.textContent = presetLabels[group];
+  nameGroup.setAttribute('role', 'group');
+  nameGroup.setAttribute('aria-labelledby', `preset-label-${group}`);
+  for (let index = 0; index < 2; index++) {
+    const label = document.createElement('label'), title = document.createElement('span'), input = document.createElement('input');
+    label.className = 'preset-name-field';
+    title.className = 'text-meta';
+    title.textContent = presetCopy.labels[index];
+    input.id = `preset-name-${group}-${index}`;
+    input.type = 'text';
+    input.setAttribute('aria-label', presetCopy.nameAria.replace('{group}', presetLabels[group]).replace('{preset}', title.textContent));
+    input.addEventListener('input', (event) => {
+      if (event.isComposing) return;
+      input.value = SettingsPresets.limitName(input.value);
+      presetState[group].names[index] = SettingsPresets.normalizeName(input.value, index);
+      control.querySelectorAll('input')[index].nextElementSibling.textContent = presetState[group].names[index];
+      savePresets();
+      clearExportedSettingsCode();
+    });
+    input.addEventListener('compositionend', () => input.dispatchEvent(new Event('input', { bubbles: true })));
+    input.addEventListener('change', () => {
+      presetState[group].names[index] = SettingsPresets.normalizeName(input.value, index);
+      syncPresetControls();
+      savePresets();
+      clearExportedSettingsCode();
+    });
+    label.append(input, title);
+    nameGroup.lastElementChild.append(label);
+  }
+  presetNamesSection.querySelector('.preset-name-groups').append(nameGroup);
+}
+syncPresetControls();
 function updateCardLoadout(card, id, s) {
   const loadout = card.querySelector('.support-card-loadout'),
     previous = loadout.dataset.support;
@@ -684,6 +853,15 @@ function updateCardLoadout(card, id, s) {
   loadout.append(character, weaponField);
 }
 function updateVisibility(s) {
+  for (const id of Object.keys(supportNames)) {
+    const index = [s.supportSlot1, s.supportSlot2, s.supportSlot3].indexOf(id),
+      control = presetControls[id];
+    if (index < 0) {
+      if (control.parentElement !== presetStaging) presetStaging.append(control);
+    } else if (control.parentElement !== supportCards[index]) {
+      supportCards[index].querySelector('.support-card-loadout').before(control);
+    }
+  }
   for (const id of ['yelan', 'citlali', 'furina', 'nico', 'xilonen'])
     $('support-' + id).hidden = !s.team.includes(id);
   for (let i = 0; i < 3; i++) {
@@ -718,6 +896,7 @@ function updateVisibility(s) {
     ['fLevel', s.fWeapon]
   ])
     dependentField(id, equipped);
+  dependentField('nWeaponBaseAtk', !s.nWeapon);
   $('fHp').closest('.stat-observed-row').hidden = !s.fWeapon;
   $('fHp').disabled = !s.fWeapon;
   $('fHpHydroResonanceIncluded').disabled = !s.fWeapon;
@@ -961,7 +1140,7 @@ function updateSliderValue(id) {
     option = definition.options[Number(element.value)],
     label = String(Array.isArray(option) ? option[1] : option);
   $(id + '-value').value = label;
-  element.setAttribute('aria-valuetext', label);
+  if (element.tagName !== 'SELECT') element.setAttribute('aria-valuetext', label);
 }
 let selectedSupportSlots = [0, 1, 2].map((index) => $(`supportSlot${index + 1}`).value);
 const customBuffInputIds = CONTENT.forms.extra.fields.filter((item) => !item.check).map((item) => item.id);
@@ -1035,6 +1214,8 @@ function render(refreshAnalysis = false) {
   }
   const r = HutaoCalculator.calculate(s);
   current = { inputs: s, result: r };
+  SettingsPresets.capture(presetState, s);
+  savePresets();
   for (const id of ['hp', 'atk', 'cEm', 'fHp', 'nAtk'])
     $(id + '-converted').value = fmtInt(r.convertedInputs[id]);
   try {
@@ -1091,7 +1272,7 @@ function render(refreshAnalysis = false) {
       )
   );
   const nicoAtkFormula = referenceStatFormula(r.nicoAtkParts, r.nicoAtk, {
-    base: s.nBaseAtk,
+    base: r.nicoBaseAtk,
     percentLabels: new Set(['炎共鳴', 'カスタム攻撃力%', '終焉', 'シロネン2凸'])
   });
   const nicoSkillRaw = r.nicoAtk * r.nicoSkillRate,
@@ -1116,11 +1297,12 @@ function render(refreshAnalysis = false) {
       { label: 'シロネン2凸', value: r.nicoLateXilonen }
     ],
     r.nicoFinalAtk,
-    { base: s.nBaseAtk, percentLabels: new Set(['終焉', 'シロネン2凸']) }
+    { base: r.nicoBaseAtk, percentLabels: new Set(['終焉', 'シロネン2凸']) }
   );
   setReference(
     'reference-nico',
-    kv(refs.nico.atk, fmtInt(r.nicoAtk), nicoAtkFormula) +
+    kv(refs.nico.baseAtk, fmtInt(r.nicoBaseAtk), `${fmtInt(r.nicoCharacterBaseAtk)} ＋ ${fmtInt(r.nicoWeaponBaseAtk)} ≈ ${fmtInt(r.nicoBaseAtk)}`) +
+      kv(refs.nico.atk, fmtInt(r.nicoAtk), nicoAtkFormula) +
       kv(refs.nico.gift, fmtInt(Math.min(nicoSkillRaw, r.nicoSkillCap)), nicoBaseFormula) +
       kv(refs.nico.buff, fmtInt(r.nicoSkillBuff), nicoBuffFormula) +
       kv(refs.nico.finalAtk, fmtInt(r.nicoFinalAtk), nicoFinalAtkFormula) +
@@ -1321,6 +1503,8 @@ const trackedSettings = new Set([
   'fR',
   'nR',
   'nWeapon',
+  'nLevel',
+  'nWeaponBaseAtk',
   'xLevel',
   'xSet',
   'xWeapon'
@@ -1428,7 +1612,6 @@ const statOwners = {
   fHp: 'フリーナ',
   xDef: 'シロネン',
   cEm: 'シトラリ',
-  nBaseAtk: 'ニコ',
   nAtk: 'ニコ'
 };
 function statUpdateTitle(fields) {
@@ -1444,8 +1627,8 @@ function statProposal(id, name, delta, formula) {
   if (next <= 0 || next === current) return null;
   const difference = next - Math.round(current);
   if (!difference) return null;
-  const expression = `${formula || formulaText(Math.abs(delta))}=${statText(Math.abs(difference))}`;
-  const wording = `${name}を今より${expression}${difference > 0 ? '高い' : '低い'}${statText(next)}にする`;
+  const expression = `${formula || formulaText(Math.abs(delta))} = ${statText(Math.abs(difference))}`;
+  const wording = `${name}を今より ${expression}${difference > 0 ? ' 高い ' : ' 低い '}${statText(next)}にする`;
   return {
     id,
     name,
@@ -1453,7 +1636,7 @@ function statProposal(id, name, delta, formula) {
     formula: formula || formulaText(Math.abs(delta)),
     next,
     description: wording,
-    text: `入力済みの${wording.replace(/にする$/, 'に変更しますか？')}`
+    text: `入力済みの${wording.replace(/にする$/, ' に変更しますか？')}`
   };
 }
 function settingChangeNotice(id, before, after) {
@@ -1514,8 +1697,8 @@ function settingChangeNotice(id, before, after) {
       statProposal(
         'nAtk',
         'ニコの攻撃力',
-        after.nBaseAtk * (after.nR - before.nR) * 0.03,
-        `${formulaText(after.nBaseAtk)}×(${Math.max(after.nR, before.nR) * 3 + 9}%-${Math.min(after.nR, before.nR) * 3 + 9}%)`
+        (HUTAO_DATA.nicoLevels[after.nLevel] + HUTAO_DATA.nicoWeapon.baseAtk) * (after.nR - before.nR) * 0.03,
+        `${formulaText(HUTAO_DATA.nicoLevels[after.nLevel] + HUTAO_DATA.nicoWeapon.baseAtk)}×(${Math.max(after.nR, before.nR) * 3 + 9}%-${Math.min(after.nR, before.nR) * 3 + 9}%)`
       )
     ].filter(Boolean);
   const reminders = {
@@ -1528,16 +1711,12 @@ function settingChangeNotice(id, before, after) {
     ],
     fLevel: ['フリーナのレベル', [['fHp', 'HP上限']]],
     xLevel: ['シロネンのレベル', [['xDef', '防御力']]],
+    nLevel: ['ニコのレベル', [['nAtk', '攻撃力']]],
+    nWeaponBaseAtk: ['武器の基礎攻撃力', [['nAtk', '攻撃力']]],
     cSet: ['シトラリの聖遺物', [['cEm', '元素熟知']]],
     xSet: ['シロネンの聖遺物', [['xDef', '防御力']]],
     cWeapon: ['祭星者の眺めの装備', [['cEm', '元素熟知']]],
-    nWeapon: [
-      '塵と光の七つの誓約の装備',
-      [
-        ['nBaseAtk', '基礎攻撃力'],
-        ['nAtk', '攻撃力']
-      ]
-    ],
+    nWeapon: ['塵と光の七つの誓約の装備', [['nAtk', '攻撃力']]],
     xWeapon: ['岩峰を巡る歌の装備', [['xDef', '防御力']]]
   };
   let manualFields = [];
@@ -1839,6 +2018,9 @@ $('reset-inputs').addEventListener('click', async () => {
   }
   dpsSettings.ratio = 80;
   dpsSettings.seconds = 20;
+  presetState = SettingsPresets.create(defaults, defaults);
+  syncPresetControls();
+  savePresets();
   saveAnalysisState();
   clearExportedSettingsCode();
   render(true);
@@ -1863,7 +2045,8 @@ $('export-settings')?.addEventListener('click', () => {
       inputs,
       damageRecords,
       dpsSettings,
-      artifactOptimizerUI.getInventory()
+      artifactOptimizerUI.getInventory(),
+      SettingsPresets.validate(presetState, definitions)
     );
   } catch (error) {
     clearExportedSettingsCode();
@@ -1916,7 +2099,14 @@ $('restore-settings')?.addEventListener('click', async () => {
   const confirmation = restored.artifactInventory
     ? transferCopy.restoreWithArtifactsConfirm.replace('{artifacts}', artifactCount)
     : transferCopy.restoreConfirm;
-  if (!(await confirmAction(transferCopy.restoreConfirmTitle, confirmation))) return;
+  const presetConfirmation = restored.presets
+    ? '両方のプリセットの値・名前・選択状態も上書きします。'
+    : 'プリセット1へ読み込み、すべてプリセット1を選択します。プリセット2とプリセット名は維持します。';
+  if (!(await confirmAction(transferCopy.restoreConfirmTitle, `${confirmation}\n${presetConfirmation}`))) return;
+  if (restored.presets) presetState = restored.presets;
+  else SettingsPresets.restoreLegacy(presetState, restored.inputs);
+  syncPresetControls();
+  savePresets();
   if (restored.artifactInventory) artifactOptimizerUI.restoreInventory(restored.artifactInventory);
   for (const definition of definitions) {
     const value = restored.inputs[definition.id],
