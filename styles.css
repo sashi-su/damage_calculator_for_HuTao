@@ -17,6 +17,7 @@
   --tint: #f6e9e7;
   --surface: #eeeeef;
   --surface-inner: #f8f6f4;
+  --surface-input: #fff;
   --surface-result: #f7f3ee;
   --accent-border: #d8b9bd;
   --result-primary: #863640;
@@ -209,7 +210,7 @@ h2 {
   width: 100%;
   min-height: 44px;
   padding: 9px 35px 9px 12px;
-  background: #fff;
+  background: var(--surface-input);
   border: 1px solid var(--line-control);
   border-radius: 6px;
   color: var(--ink);
@@ -375,7 +376,9 @@ aside {
 }
 
 .assumptions {
-  padding: 20px 8px;
+  padding-bottom: 20px;
+  padding-left: 8px;
+  padding-right: 8px;
   font-size: 11px;
   color: var(--muted);
 }
@@ -654,9 +657,23 @@ footer {
   color: var(--muted);
 }
 
+@media (max-width: 760px) {
+  .slider-field .input-wrap {
+    grid-template-columns: minmax(0, 1fr);
+    width: 66.667%;
+  }
+  #hutao-equipment .fixed-field > .stat-converted-value {
+    width: 66.667%;
+  }
+  .slider-field output,
+  .slider-field .slider-ticks {
+    display: none;
+  }
+}
+
 .view-tabs {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(8, minmax(0, 1fr));
   gap: 8px;
   margin: 0 0 24px;
   position: sticky;
@@ -671,6 +688,7 @@ footer {
 .view-tabs button {
   font-weight: 600;
   background: var(--white);
+  padding-inline: 8px;
 }
 
 .view-tabs button[aria-selected='true']:hover {
@@ -701,6 +719,19 @@ footer {
 
 .source-group + .source-group {
   margin-top: 24px;
+}
+
+.source-link-mobile {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .source-link-desktop {
+    display: none;
+  }
+  .source-link-mobile {
+    display: inline;
+  }
 }
 
 .history {
@@ -2315,7 +2346,7 @@ footer {
   min-width: 0;
 }
 
-.stat-converted > .text-secondary {
+.stat-converted > .text-standard {
   display: block;
   margin-bottom: 5px;
 }
@@ -2394,6 +2425,59 @@ footer {
 .stat-segment-choices {
   display: flex;
   min-width: 0;
+}
+
+.settings-preset-choices {
+  margin: 16px 0;
+}
+
+.settings-preset-choices .stat-segment-choice span {
+  overflow-wrap: anywhere;
+}
+
+.preset-name-groups {
+  display: grid;
+  gap: 24px;
+  margin-top: 20px;
+}
+
+.preset-name-group {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+}
+
+.preset-name-group-label {
+  padding-top: 8px;
+}
+
+.preset-name-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.preset-name-field {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.preset-name-field input {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 760px) {
+  .preset-name-group {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .preset-name-group-label {
+    padding-top: 0;
+  }
 }
 
 .stat-segment-choice {
@@ -2593,6 +2677,11 @@ footer {
   border-radius: 12px;
   color: var(--ink);
   box-shadow: none;
+}
+
+/* User-requested background exception for the artifact main-stat readout. */
+#artifact-main + .stat-converted-value.card-basic {
+  background: var(--surface-input);
 }
 
 .card-inner,
@@ -3125,7 +3214,6 @@ details {
   border-bottom: 0;
 }
 
-.references > .stat-update-settings + .assumptions,
 .references > .assumptions + .creator,
 .references > .source-references,
 .references > .history {
@@ -3586,18 +3674,6 @@ main > footer a:not(.brand):visited {
 @media (prefers-reduced-motion: reduce) {
   .result-card-compact {
     transition: none;
-  }
-}
-
-/* Keep input values at 16px while using a consistent, lighter label scale on phones. */
-@media (max-width: 760px) {
-  .label,
-  .field-label-with-help,
-  .settings-group .label,
-  .support-card > .field > .label,
-  .loadout-strip .loadout-weapon-option .label,
-  .paired-input-mode legend {
-    font-size: 14px;
   }
 }
 
@@ -4398,12 +4474,6 @@ footer {
   }
   .text-largest-result {
     font-size: 36px !important;
-  }
-  .field > .label.text-standard,
-  .stat-observed-entry .field-label-with-help > .text-standard,
-  .actual-controls .text-standard,
-  .simple-dps-controls .text-standard {
-    font-size: var(--type-support) !important;
   }
   .actual-results .text-medium-result {
     font-size: var(--type-body) !important;
