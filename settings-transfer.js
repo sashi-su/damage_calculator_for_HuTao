@@ -1,13 +1,13 @@
 'use strict';
 (function (root) {
   const FORMAT = 'hutao-calculator-settings',
-    VERSION = 4,
+    VERSION = 6,
     MAX_RECORDS = 30,
     MAX_LABEL_LENGTH = 60,
     MAX_CODE_LENGTH = 100000;
   // Version 4 is a permanent snapshot. Never reorder entries or change these defaults;
   // changing the form's defaults must not change the meaning of an existing code.
-  const SCHEMA = Object.freeze(
+  const LEGACY_SCHEMA = Object.freeze(
     [
       ['level', 90],
       ['homa', 1],
@@ -88,6 +88,11 @@
       ['dpsSeconds', 20]
     ].map((entry) => Object.freeze(entry))
   );
+  const SCHEMA = Object.freeze([
+    ...LEGACY_SCHEMA.slice(0, -2).filter(([id]) => id !== 'nBaseAtk'),
+    Object.freeze(['nLevel', 90]), Object.freeze(['nWeaponBaseAtk', '741']),
+    ...LEGACY_SCHEMA.slice(-2)
+  ]);
   const INPUT_SCHEMA = SCHEMA.slice(0, -2),
     DEFAULTS = Object.freeze(Object.fromEntries(INPUT_SCHEMA));
   const PARTS = Object.freeze(['flower', 'plume', 'sand', 'goblet', 'circlet']),
@@ -119,6 +124,8 @@
   const object = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
   const optimizer = () =>
     root.ArtifactOptimizer || (typeof require === 'function' ? require('./artifact-optimizer.js') : null);
+  const presets = () =>
+    root.SettingsPresets || (typeof require === 'function' ? require('./preset-settings.js') : null);
   const invalid = () => {
     throw new Error('この計算機に対応した設定コードではありません。');
   };
@@ -288,7 +295,45 @@
     packInventory(inventory);
     return inventory;
   }
-  function createCode(inputs, damageRecords, dpsSettings, artifactInventory = optimizer().emptyInventory()) {
+  function packPresets(state) {
+    return Object.entries(presets().GROUPS).map(([group, ids]) => {
+      const entry = state[group];
+      return [entry.selected, ...entry.names, ...entry.values.map((snapshot) => {
+        const indices = [], values = [];
+        ids.forEach((id, index) => {
+          if (snapshot[id] !== DEFAULTS[id]) {
+            indices.push(index);
+            values.push(encode(snapshot[id], DEFAULTS[id]));
+          }
+        });
+        return [indices, values];
+      })];
+    });
+  }
+  function unpackPresets(groups, definitions, version) {
+    const P = presets(), entries = Object.entries(P.GROUPS).map(([group, ids]) =>
+      [group, version === 5 && group === 'nico'
+        ? ['nC', 'nBaseAtk', 'nAtk', 'nAtkPyroResonanceIncluded', 'nAfterElegy', 'nAfterXilonen', 'nWeapon', 'nR', 'nSet'] : ids]);
+    const initial = version === 5 ? Object.fromEntries(LEGACY_SCHEMA) : DEFAULTS;
+    if (!Array.isArray(groups) || groups.length !== entries.length) invalid();
+    const state = Object.fromEntries(entries.map(([group, ids], groupIndex) => {
+      const entry = groups[groupIndex];
+      if (!Array.isArray(entry) || entry.length !== 5) invalid();
+      const values = entry.slice(3).map((snapshot) => {
+        if (!Array.isArray(snapshot) || snapshot.length !== 2 || !snapshot.every(Array.isArray) ||
+            snapshot[0].length !== snapshot[1].length || snapshot[0].length > ids.length) invalid();
+        const value = Object.fromEntries(ids.map((id) => [id, initial[id]]));
+        snapshot[0].forEach((index, i) => {
+          if (!Number.isInteger(index) || index < 0 || index >= ids.length || (i > 0 && index <= snapshot[0][i - 1])) invalid();
+          value[ids[index]] = decode(snapshot[1][i], initial[ids[index]]);
+        });
+        return value;
+      });
+      return [group, { selected: entry[0], names: entry.slice(1, 3), values }];
+    }));
+    return P.validate(state, definitions);
+  }
+  function createCode(inputs, damageRecords, dpsSettings, artifactInventory = optimizer().emptyInventory(), presetState = presets().create(inputs, DEFAULTS)) {
     if (
       !object(inputs) ||
       Object.keys(inputs).length !== INPUT_SCHEMA.length ||
@@ -319,21 +364,25 @@
       v: VERSION,
       s: [indices.length === SCHEMA.length ? 0 : indices, values],
       a: packInventory(artifactInventory),
-      r: records
+      r: records,
+      p: packPresets(presetState)
     });
   }
   function parseCompact(code, definitions) {
-    if (Object.keys(code).length !== 4 || !['v', 's', 'a', 'r'].every((key) => own(code, key))) invalid();
+    const schema = code.v < 6 ? LEGACY_SCHEMA : SCHEMA,
+      inputSchema = schema.slice(0, -2);
+    const keys = code.v === 4 ? ['v', 's', 'a', 'r'] : ['v', 's', 'a', 'r', 'p'];
+    if (Object.keys(code).length !== keys.length || !keys.every((key) => own(code, key))) invalid();
     const settings = code.s;
     if (
       !Array.isArray(settings) ||
       settings.length !== 2 ||
       !Array.isArray(settings[1]) ||
-      settings[1].length > SCHEMA.length
+      settings[1].length > schema.length
     )
       invalid();
-    const indices = settings[0] === 0 ? SCHEMA.map((_, i) => i) : settings[0],
-      values = SCHEMA.map(([, initial]) => initial);
+    const indices = settings[0] === 0 ? schema.map((_, i) => i) : settings[0],
+      values = schema.map(([, initial]) => initial);
     if (
       !Array.isArray(indices) ||
       indices.length !== settings[1].length ||
@@ -341,24 +390,30 @@
         (index, i) =>
           !Number.isInteger(index) ||
           index < 0 ||
-          index >= SCHEMA.length ||
+          index >= schema.length ||
           (i > 0 && index <= indices[i - 1])
       )
     )
       invalid();
-    indices.forEach((index, i) => (values[index] = decode(settings[1][i], SCHEMA[index][1])));
+    indices.forEach((index, i) => (values[index] = decode(settings[1][i], schema[index][1])));
     const inputs = validateInputs(
-      Object.fromEntries(INPUT_SCHEMA.map(([id], index) => [id, values[index]])),
+      presets().migrateNicoInputs(Object.fromEntries(inputSchema.map(([id], index) => [id, values[index]]))),
       definitions
     );
-    const dpsSettings = { ratio: values[INPUT_SCHEMA.length], seconds: values[INPUT_SCHEMA.length + 1] };
+    const dpsSettings = { ratio: values[inputSchema.length], seconds: values[inputSchema.length + 1] };
     if (!isValidDpsSettings(dpsSettings)) throw new Error('DPS設定の値が不正です。');
+    const presetState = code.v >= 5 ? unpackPresets(code.p, definitions, code.v) : null;
+    if (presetState) {
+      const active = presets().activeInputs(presetState, inputs);
+      if (Object.keys(inputs).some((id) => active[id] !== inputs[id])) invalid();
+    }
     return {
       inputs,
       damageRecords: validateRecords(code.r),
       dpsSettings,
       artifactInventory: unpackInventory(code.a),
-      version: VERSION
+      ...(presetState ? { presets: presetState } : {}),
+      version: code.v
     };
   }
   function migrateLegacy(source, version, definitions) {
@@ -405,7 +460,7 @@
     // Before this selector existed, every code implicitly used a pyro goblet.
     if (definitions.some((definition) => definition.id === 'gobletMain') && !own(inputs, 'gobletMain'))
       inputs.gobletMain = 'pyro';
-    return validateInputs(inputs, definitions);
+    return validateInputs(presets().migrateNicoInputs(inputs), definitions);
   }
   function parseCode(text, definitions) {
     const source = String(text).trim();
@@ -417,7 +472,7 @@
       throw new Error('設定コードを読み取れません。1行全体をコピーしてください。');
     }
     if (!object(code)) invalid();
-    if (code.v === VERSION) return parseCompact(code, definitions);
+    if ([4, 5, VERSION].includes(code.v)) return parseCompact(code, definitions);
     if (code.format !== FORMAT || ![1, 2, 3].includes(code.version) || !object(code.inputs)) invalid();
     const dpsSettings = code.dpsSettings ?? (code.version <= 2 ? { ratio: 80, seconds: 20 } : null);
     if (!isValidDpsSettings(dpsSettings)) throw new Error('DPS設定の値が不正です。');
