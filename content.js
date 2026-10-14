@@ -418,8 +418,8 @@
               'このWebページをHoYoLABの記事で紹介しています。このツールの誤りや不具合を発見された方は、記事で報告してくださると嬉しいです。',
             links: [
               {
-                label: '準備中です！',
-                url: 'https://example.com/'
+                label: '「胡桃用ダメージ計算機」を公開しました',
+                url: 'https://www.hoyolab.com/article/46934191'
               }
             ]
           },
