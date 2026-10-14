@@ -7,6 +7,9 @@
     return r < 0 ? 1 - r / 2 : r < 0.75 ? 1 - r : 1 / (4 * r + 1);
   }
   function calculate(s) {
+    const nicoCharacterBaseAtk = D.nicoLevels[s.nLevel ?? 90],
+      nicoWeaponBaseAtk = s.nWeapon ? D.nicoWeapon.baseAtk : D.nicoWeaponBaseAtk[s.nWeaponBaseAtk ?? '741'],
+      nicoBaseAtk = nicoCharacterBaseAtk + nicoWeaponBaseAtk;
     const observed = s;
     let convertedInputs = { hp: s.hp, atk: s.atk, fHp: s.fHp, nAtk: s.nAtk, cEm: s.cEm };
     let inputConversion = null;
@@ -16,7 +19,7 @@
         hutaoBaseAtk = hutaoBase.atk + D.weaponAtk;
       const hp = s.hp - (s.hpHydroResonanceIncluded === 'yes' ? hutaoBase.hp * 0.25 : 0);
       const fHp = s.fHp - (s.fHpHydroResonanceIncluded === 'yes' ? furinaBase * 0.25 : 0);
-      const nAtk = s.nAtk - (s.nAtkPyroResonanceIncluded === 'yes' ? s.nBaseAtk * 0.25 : 0);
+      const nAtk = s.nAtk - (s.nAtkPyroResonanceIncluded === 'yes' ? nicoBaseAtk * 0.25 : 0);
       const cEm = s.cEm - (s.cC >= 2 && s.cEmConstellation2Included === 'yes' ? 125 : 0);
       const observedHp = hp + (s.atkHydroResonanceIncluded === 'yes' ? hutaoBase.hp * 0.25 : 0);
       const observedHoma =
@@ -137,7 +140,7 @@
       nicoAtkParts = [{ label: '入力値', value: s.nAtk }];
     let nicoAtk = s.nAtk;
     if (has('nico') && nAtkPyroResonanceIncluded === 'no') {
-      const value = s.nBaseAtk * 0.25;
+      const value = nicoBaseAtk * 0.25;
       nicoAtk += value;
       nicoAtkParts.push({ label: '炎共鳴', value });
     }
@@ -146,17 +149,17 @@
       nicoAtkParts.push({ label: 'カスタム固定値', value: s.customAtkFlat });
     }
     if (has('nico') && s.customAtkPctTeam) {
-      const value = (s.nBaseAtk * s.customAtkPct) / 100;
+      const value = (nicoBaseAtk * s.customAtkPct) / 100;
       nicoAtk += value;
       nicoAtkParts.push({ label: 'カスタム攻撃力%', value });
     }
     if (has('nico') && s.nAfterElegy) {
-      const value = (s.nBaseAtk * elegyAtk) / 100;
+      const value = (nicoBaseAtk * elegyAtk) / 100;
       nicoAtk += value;
       nicoAtkParts.push({ label: '終焉', value });
     }
     if (has('nico') && xilonenActive && s.xC >= 2 && s.nAfterXilonen) {
-      const value = s.nBaseAtk * 0.45;
+      const value = nicoBaseAtk * 0.45;
       nicoAtk += value;
       nicoAtkParts.push({ label: 'シロネン2凸', value });
     }
@@ -165,8 +168,8 @@
       nicoSkillCap = nTalent === 13 ? 708 : 600;
     const nicoSkillBuff = Math.min(nicoAtk * nicoSkillRate, nicoSkillCap) + 300 + (s.nC >= 2 ? 300 : 0),
       fTalent = s.fC >= 3 ? 13 : 10;
-    const nicoLateElegy = has('nico') && !s.nAfterElegy ? (s.nBaseAtk * elegyAtk) / 100 : 0,
-      nicoLateXilonen = has('nico') && xilonenActive && s.xC >= 2 && !s.nAfterXilonen ? s.nBaseAtk * 0.45 : 0,
+    const nicoLateElegy = has('nico') && !s.nAfterElegy ? (nicoBaseAtk * elegyAtk) / 100 : 0,
+      nicoLateXilonen = has('nico') && xilonenActive && s.xC >= 2 && !s.nAfterXilonen ? nicoBaseAtk * 0.45 : 0,
       nicoFinalAtk = nicoAtk + nicoSkillBuff + nicoLateElegy + nicoLateXilonen,
       nicoGuidancePerHit = s.nC >= 4 ? nicoFinalAtk * 0.7 : 0;
     const cEmConstellation2Included = s.cEmConstellation2Included === 'no' ? 'no' : 'yes',
@@ -352,6 +355,9 @@
       keyHpParts,
       keyEm,
       nAtkPyroResonanceIncluded,
+      nicoCharacterBaseAtk,
+      nicoWeaponBaseAtk,
+      nicoBaseAtk,
       nicoAtk,
       nicoAtkParts,
       nicoLateElegy,
