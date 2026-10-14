@@ -30,11 +30,11 @@
           },
           {
             id: 'hutao',
-            label: '胡桃の設定'
+            label: '胡桃設定'
           },
           {
             id: 'support',
-            label: 'サポーターの設定'
+            label: 'サポーター設定'
           },
           {
             id: 'verification',
@@ -43,6 +43,10 @@
           {
             id: 'analysis',
             label: 'ダメージ分析'
+          },
+          {
+            id: 'auxiliary',
+            label: '補助機能'
           },
           {
             id: 'other',
@@ -113,7 +117,7 @@
         },
         support: {
           number: '03',
-          title: 'サポーターの設定'
+          title: 'サポーター設定'
         },
         verification: {
           number: '04',
@@ -302,7 +306,7 @@
               help: {
                 title: '数値が実際と異なる場合',
                 items: [
-                  'ダメージ計算の正確性には万全を期していますが、入力された数値の精度により僅かな誤差が生じることがあります',
+                  'ダメージ計算の正確性には万全を期しています。例えば護摩の杖の基礎攻撃力は、参考文献に従って608.0745972としています。しかしそれでも、入力された数値の精度により僅かな誤差が生じることがあります',
                   '例えば、ゲーム内では会心ダメージは0.1%単位でしか確認できませんが、会心ダメージが0.01%異なるだけで数十ほどの計算誤差が生じます'
                 ]
               }
@@ -359,13 +363,35 @@
             }
           }
         },
+        auxiliary: {
+          number: '07',
+          title: '補助機能'
+        },
         other: {
           number: '06',
           title: 'その他',
           hpCapTitle: '胡桃のHP上限について',
+          presetNames: {
+            title: 'プリセット名の変更',
+            description: '初期設定では「プリセット1」などとなっている、プリセットの名前を変更できます。',
+            expand: '名前を入力',
+            note: 'プリセット名は10文字まで入力できます。',
+            labels: ['プリセット1', 'プリセット2'],
+            groups: {
+              custom: 'カスタムバフ',
+              hutao: '胡桃',
+              yelan: '夜蘭',
+              citlali: 'シトラリ',
+              furina: 'フリーナ',
+              nico: 'ニコ',
+              xilonen: 'シロネン'
+            },
+            nameAria: '{group}の{preset}の名前',
+            selectionAria: '{group}のプリセット'
+          },
           statUpdate: {
             description:
-              '装備の精錬ランクなどを変更したとき、確認済みの数値の更新を提案するか選べます。入力欄が初期値のままの場合は提案や通知を表示しません。',
+              '武器の精錬ランクなどを変更したとき、確認済みの数値の更新を提案するか選べます。入力欄が初期値のままの場合は提案や通知を表示しません。',
             automaticDetailsTitle: '設定と更新を提案するステータス',
             automaticItems: [
               '護摩の杖の精錬ランクの変更 → 胡桃のHP上限と攻撃力の更新を提案',
@@ -378,10 +404,11 @@
               '胡桃のレベルの変更 → 胡桃のHP上限と攻撃力の更新を促す',
               'フリーナのレベルの変更 → フリーナのHP上限の更新を促す',
               'シロネンのレベルの変更 → シロネンの防御力の更新を促す',
+              'ニコのレベル・武器の基礎攻撃力の変更 → ニコの攻撃力の更新を促す',
               'シトラリの聖遺物の変更 → シトラリの元素熟知の更新を促す',
               'シロネンの聖遺物の変更 → シロネンの防御力の更新を促す',
               '祭星者の眺めの装備切替 → シトラリの元素熟知の更新を促す',
-              '塵と光の七つの誓約の装備切替 → ニコの基礎攻撃力と攻撃力の更新を促す',
+              '塵と光の七つの誓約の装備切替 → ニコの攻撃力の更新を促す',
               '岩峰を巡る歌の装備切替 → シロネンの防御力の更新を促す'
             ]
           },
@@ -399,7 +426,7 @@
           assumptions: {
             title: '計算の前提',
             items: [
-              '護摩の杖のレベルは90で、火魔女4を装備しているとします',
+              '護摩の杖のレベルは90とします。胡桃のダメージに関係するサポーターの武器のレベルも全て90とします',
               '血梅香ダメージを含む胡桃の攻撃中は、常にHP50%未満で元素スキルによる攻撃力上昇中とします',
               '胡桃の天賦レベルは全て最大（10または13）とします。ニコの元素スキルなど、胡桃のダメージに関係するサポーターの天賦レベルも全て最大（10または13）とします',
               'フリーナの元素爆発効果やシトラリ完凸効果は、胡桃の攻撃中常に最大効果が持続するとします',
@@ -416,7 +443,7 @@
             heading: '参考文献',
             links: [
               {
-                label: '原神Wiki ダメージ計算式',
+                label: '原神Wiki「ダメージ計算式」',
                 url: 'https://wikiwiki.jp/genshinwiki/%E3%83%80%E3%83%A1%E3%83%BC%E3%82%B8%E8%A8%88%E7%AE%97%E5%BC%8F'
               },
               {
@@ -438,28 +465,16 @@
             title: '数値引用元',
             links: [
               {
-                label: '原神Wiki 胡桃',
-                url: 'https://wikiwiki.jp/genshinwiki/%E8%83%A1%E6%A1%83'
-              },
-              {
-                label: '原神Wiki キャラクター一覧 >> 夜蘭、シトラリ、フリーナ、ニコ、シロネン',
+                label: '原神Wiki「キャラクター一覧」 >> 胡桃、夜蘭、シトラリ、フリーナ、ニコ、シロネン',
                 url: 'https://wikiwiki.jp/genshinwiki/%E3%82%AD%E3%83%A3%E3%83%A9%E3%82%AF%E3%82%BF%E3%83%BC%E4%B8%80%E8%A6%A7'
               },
               {
-                label: '原神Wiki 武器 >> 片手剣、長柄武器、法器、弓',
+                label: '原神Wiki「武器」 >> 片手剣、長柄武器、法器、弓',
                 url: 'https://wikiwiki.jp/genshinwiki/%E6%AD%A6%E5%99%A8'
               },
               {
-                label: 'Genshin Impact Wiki "Hu Tao"',
-                url: 'https://genshin-impact.fandom.com/wiki/Hu_Tao'
-              },
-              {
-                label: 'Genshin Impact Wiki "Furina"',
-                url: 'https://genshin-impact.fandom.com/wiki/Furina'
-              },
-              {
-                label: 'Genshin Impact Wiki "Xilonen"',
-                url: 'https://genshin-impact.fandom.com/wiki/Xilonen'
+                label: 'Genshin Impact Wiki "Character List" >> Hu Tao, Furina, Nicole, Xilonen',
+                url: 'https://genshin-impact.fandom.com/wiki/Character/List'
               },
               {
                 label: 'Genshin Impact Wiki "Weapon/Level Scaling"',
@@ -471,8 +486,14 @@
             title: '画像引用元',
             links: [
               {
-                label: 'HoYoWiki',
-                url: 'https://wiki.hoyolab.com/pc/genshin/home'
+                label: 'HoYoWiki「原神 キャラ図鑑」',
+                url: 'https://wiki.hoyolab.com/pc/genshin/aggregate/2',
+                mobileUrl: 'https://wiki.hoyolab.com/m/genshin/aggregate/2'
+              },
+              {
+                label: 'HoYoWiki「原神 武器」',
+                url: 'https://wiki.hoyolab.com/pc/genshin/aggregate/4',
+                mobileUrl: 'https://wiki.hoyolab.com/m/genshin/aggregate/4'
               }
             ]
           },
@@ -480,16 +501,12 @@
             title: '更新履歴',
             items: [
               {
-                date: '2026年10月7日',
-                text: '聖遺物の最適化機能を追加。また、設定コードを短くしました。（以前の設定コードからでも復元できます）'
+                date: '2026年9月??日',
+                text: 'webページを公開'
               },
               {
-                date: '2026年9月29日',
-                text: 'キャラクターにシロネンを追加。ステータス更新の提案機能や入力内容の保存機能を追加。その他、Webページのデザインを改善しました。'
-              },
-              {
-                date: '2026年9月13日',
-                text: 'Webページを公開。'
+                date: '???',
+                text: '???'
               }
             ]
           }
@@ -518,6 +535,7 @@
           weaponMissing: '武器未装備 ＝ 0'
         },
         nico: {
+          baseAtk: '基礎攻撃力',
           atk: '元素スキル前攻撃力',
           finalAtk: '最終攻撃力',
           guidance: '導きの加護1回分の実数ダメージ加算',
@@ -535,7 +553,7 @@
         reset: '入力例に戻す',
         resetConfirmTitle: '入力例に戻しますか？',
         resetConfirm:
-          '現在の入力内容や合計ダメージ期待値の記録などは消去されます。登録した聖遺物は消去されません。よろしいですか？',
+          '入力内容を入力例に戻します。登録した聖遺物は消去されません。よろしいですか？',
         confirmAction: '実行する',
         cancelAction: 'キャンセル',
         transfer: {
@@ -543,7 +561,7 @@
           description:
             'このページの入力内容は、ローカルストレージに保存され、一度ページを閉じても自動的に復元されます。ただし、他のブラウザーで開いたときなどは入力内容は維持されません。',
           codeDescription:
-            '下のボタンを押すと、現在の入力内容、登録済みの聖遺物、合計ダメージ期待値の記録、DPS設定を復元できる設定コードを発行できます。このコードを保存すると、他のブラウザで開いたときやローカルストレージが失われたときでも復元できます。',
+            '下のボタンを押すと、現在の入力内容、登録済みの聖遺物、合計ダメージ期待値の記録などを復元できる設定コードを発行できます。このコードを保存すると、他のブラウザで開いたときやローカルストレージが失われたときでも復元できます。',
           exportDescription: 'このコードをご自身のメモ帳などに貼り付けてください',
           label: '設定コード',
           placeholder: '保存した設定コードをここに貼り付けてください。',
@@ -553,9 +571,9 @@
           restoreAction: '復元する',
           restoreConfirmTitle: '入力内容を復元しますか？',
           restoreConfirm:
-            '現在の入力内容、合計ダメージ期待値の記録、DPS設定を上書きします。この設定コードには聖遺物一覧が含まれないため、登録済みの聖遺物は維持します。よろしいですか？',
+            '現在の入力内容、合計ダメージ期待値の記録、DPS設定を上書きします。この設定コードには聖遺物が含まれないため、登録済みの聖遺物は維持します。よろしいですか？',
           restoreWithArtifactsConfirm:
-            '現在の入力内容、登録済みの聖遺物、合計ダメージ期待値の記録、DPS設定を上書きします。聖遺物一覧はコードに保存された{artifacts}個に置き換わります。よろしいですか？',
+            '現在の入力内容、登録済みの聖遺物、合計ダメージ期待値の記録、DPS設定を上書きします。聖遺物はコードに保存された{artifacts}個に置き換わります。よろしいですか？',
           restoredWithArtifacts:
             '入力内容、聖遺物{artifacts}個、ダメージ比較記録{records}件、DPS設定を復元しました。',
           restoredLegacy:
@@ -985,6 +1003,7 @@
         nico: {
           name: 'ニコ',
           fields: [
+            { id: 'nLevel', label: 'キャラクターレベル', value: 90, options: [90, 95, 100] },
             {
               id: 'nC',
               label: '命ノ星座',
@@ -992,10 +1011,10 @@
               optionType: 'constellation'
             },
             {
-              id: 'nBaseAtk',
-              label: '基礎攻撃力',
-              value: 1083,
-              min: 1
+              id: 'nWeaponBaseAtk',
+              label: '武器の基礎攻撃力',
+              value: '741',
+              options: ['454', '510', '565', '620', '542', '608', '674', '741']
             },
             {
               id: 'nAtk',
@@ -1241,11 +1260,11 @@
 
   // 聖遺物最適化の画面・操作・エラーに表示する文言。
   CONTENT.page.navigation.items.splice(
-    CONTENT.page.navigation.items.findIndex((item) => item.id === 'other'),
+    CONTENT.page.navigation.items.findIndex((item) => item.id === 'auxiliary'),
     0,
     { id: 'optimizer', label: '聖遺物最適化' }
   );
-  CONTENT.page.sections.other.number = '07';
+  CONTENT.page.sections.other.number = '08';
   CONTENT.page.sections.optimizer = {
     number: '06',
     title: '聖遺物最適化',
@@ -1372,7 +1391,10 @@
   const esc = (s) =>
     String(s).replace(/[&<>\"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
   const links = (items) =>
-    `<ul>${items.map((x) => `<li><a class="text-external-link" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.label)}</a></li>`).join('')}</ul>`;
+    `<ul>${items.map((x) => {
+      const link = (url, deviceClass = '') => `<a class="text-external-link${deviceClass ? ' ' + deviceClass : ''}" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(x.label)}</a>`;
+      return `<li>${x.mobileUrl ? link(x.url, 'source-link-desktop') + link(x.mobileUrl, 'source-link-mobile') : link(x.url)}</li>`;
+    }).join('')}</ul>`;
   const sourceGroup = (title, items, note = '') =>
     `<div class="source-group"><h4>${title}</h4>${note ? `<p class="note text-meta">${note}</p>` : ''}${links(items)}</div>`;
   const sourceGroups = (other) =>
@@ -1390,7 +1412,7 @@
  <div id="view-basic" role="tabpanel" data-view-panel="basic"><section class="panel">${heading(s.basic)}<div class="rotation"><span class="pill text-secondary-label">${s.basic.rotation.badge}</span><strong class="text-standard">${s.basic.rotation.formula}</strong></div><section class="basic-settings-group"><h3 class="heading-with-help"><span>${s.basic.reactionHeading}</span><button type="button" class="help-button" popovertarget="reaction-settings-help" aria-label="${s.basic.reactionHelp.title}">?</button></h3><div id="reaction-settings-help" class="help-popover" popover><strong class="text-primary-label">${s.basic.reactionHelp.title}</strong>${s.basic.reactionHelp.paragraphs.map((text) => `<p class="text-secondary">${text}</p>`).join('')}</div><div class="preset-buttons">${s.basic.presets.map((x) => `<button type="button" class="text-muted-action" data-prob="${x.prob}" data-amp="${x.amp}">${x.label}</button>`).join('')}</div><div id="reaction-fields" class="fields"></div></section><section class="basic-settings-group"><h3>${s.basic.enemyHeading}</h3><div id="enemy-fields" class="fields"></div></section><section class="basic-settings-group"><h3>${s.basic.custom.title}</h3><p class="note text-standard">${s.basic.custom.note}</p><details class="basic-custom-details"><summary>${s.basic.custom.expand}</summary><div id="extra-fields" class="fields"></div></details></section></section></div>
  <section class="panel" id="view-hutao" role="tabpanel" data-view-panel="hutao" hidden>${heading(s.hutao)}<div class="loadout-strip loadout-strip-featured" aria-label="${s.hutao.loadoutAria}">${s.hutao.loadout.map((x) => `<figure><img src="${x.image}" alt="${x.name}" width="256" height="256"><figcaption class="text-standard">${x.name}</figcaption></figure>`).join('')}</div><div id="hutao-fields" class="settings-groups"></div><div class="reference-values card-result"><h3>${s.hutao.referenceTitle}</h3><div id="reference-hutao" class="fields"></div></div></section>
  <section class="panel" id="view-support" role="tabpanel" data-view-panel="support" hidden>${heading(s.support)}<div id="team-fields" class="support-cards"></div><p id="team-resonance" class="callout text-standard"></p><p id="artifact-duplicate-warning" class="text-standard" role="status" hidden></p><div id="support-fields"></div></section><section class="panel verification" id="view-verification" role="tabpanel" data-view-panel="verification" hidden>${heading(s.verification)}<div id="verification-content"></div></section><section class="panel" id="view-analysis" role="tabpanel" data-view-panel="analysis" hidden>${heading(s.analysis)}<div id="analysis-content"></div></section>
-<section class="panel references" id="view-other" role="tabpanel" data-view-panel="other" hidden>${heading(s.other)}<section class="hutao-hp-cap"><h3>${s.other.hpCapTitle}</h3><p id="hutao-hp-cap-status" class="callout text-standard"></p></section><section class="settings-transfer settings-subsection"><h3>${p.actions.transfer.title}</h3><p class="text-standard">${p.actions.transfer.description}</p><p class="text-standard">${p.actions.transfer.codeDescription}</p><div class="settings-transfer-actions"><button type="button" id="export-settings" class="text-muted-action">${p.actions.transfer.show}</button><button type="button" id="import-settings" class="text-muted-action">${p.actions.transfer.restore}</button></div><p id="settings-transfer-status" class="text-meta" role="status"></p></section><section class="stat-update-settings settings-subsection"><h3>ステータスの更新設定</h3><p class="text-standard">${s.other.statUpdate.description}</p><div class="field"><label class="label text-standard" for="stat-auto-preference">ステータス更新の提案</label><span class="input-wrap"><select id="stat-auto-preference"><option value="ask">毎回確認する</option><option value="apply">自動で更新する</option><option value="keep">更新しない</option></select></span></div><details class="stat-update-details"><summary class="text-secondary">${s.other.statUpdate.automaticDetailsTitle}</summary><ul class="text-secondary">${s.other.statUpdate.automaticItems.map((x) => `<li>${x}</li>`).join('')}</ul></details><div class="field"><label class="label text-standard" for="stat-reminder-preference">ステータス更新の促し</label><span class="input-wrap"><select id="stat-reminder-preference"><option value="show">毎回促す</option><option value="hide">表示しない</option></select></span></div><details class="stat-update-details"><summary class="text-secondary">${s.other.statUpdate.reminderDetailsTitle}</summary><ul class="text-secondary">${s.other.statUpdate.reminderItems.map((x) => `<li>${x}</li>`).join('')}</ul></details></section><section class="assumptions"><h3>${s.other.assumptions.title}</h3><ul class="text-standard">${s.other.assumptions.items.map((x) => `<li>${x}</li>`).join('')}</ul></section><section class="creator"><h3>${s.other.creator.title}</h3><p class="text-standard">${s.other.creator.description}</p>${links(s.other.creator.links)}</section>${sourceGroups(s.other)}<div class="history"><h3>${s.other.history.title}</h3>${s.other.history.items.map((x) => `<div class="history-entry text-standard"><span>${x.date}</span><span class="history-text">${x.text}</span></div>`).join('')}</div></section><div class="actions"><button type="button" id="reset-inputs" class="text-muted-action">${p.actions.reset}</button></div><p id="input-save-status" role="status" class="note text-meta"></p></form><aside><div class="result-card"><h2 class="text-on-red">${p.result.title}</h2><div id="rotation-total" class="total text-largest-result text-on-red" aria-live="polite"></div><p class="text-meta text-on-red-muted">${p.result.description}</p><div id="input-error" class="text-error" role="alert" hidden></div></div></aside></div><dialog id="export-settings-dialog" class="settings-dialog card-basic" aria-labelledby="export-settings-title"><h3 id="export-settings-title" tabindex="-1">${p.actions.transfer.show}</h3><label class="text-standard" for="export-settings-code">${p.actions.transfer.exportDescription}</label><textarea id="export-settings-code" rows="7" readonly spellcheck="false"></textarea><div class="settings-dialog-actions"><button type="button" id="copy-settings-code" class="text-muted-action">${p.actions.transfer.copy}</button><button type="button" class="text-muted-action" data-close-settings-dialog>${p.actions.transfer.close}</button></div><p id="export-settings-status" class="text-meta" role="status"></p></dialog><dialog id="import-settings-dialog" class="settings-dialog card-basic" aria-labelledby="import-settings-title"><h3 id="import-settings-title">${p.actions.transfer.restore}</h3><label class="text-standard" for="import-settings-code">${p.actions.transfer.label}</label><textarea id="import-settings-code" rows="7" spellcheck="false" placeholder="${p.actions.transfer.placeholder}"></textarea><div class="settings-dialog-actions"><button type="button" id="restore-settings" class="text-muted-action">${p.actions.transfer.restoreAction}</button><button type="button" class="text-muted-action" data-close-settings-dialog>${p.actions.transfer.close}</button></div><p id="import-settings-status" class="text-meta" role="status"></p></dialog><footer>${p.footer.text} <a class="text-external-link" href="${esc(p.footer.link)}" target="_blank" rel="noopener noreferrer">${esc(p.footer.link)}</a></footer></main>`;
+<section class="panel references auxiliary" id="view-auxiliary" role="tabpanel" data-view-panel="auxiliary" hidden>${heading(s.auxiliary)}<section class="hutao-hp-cap"><h3>${s.other.hpCapTitle}</h3><p id="hutao-hp-cap-status" class="callout text-standard"></p></section><section class="settings-transfer settings-subsection"><h3>${p.actions.transfer.title}</h3><p class="text-standard">${p.actions.transfer.description}</p><p class="text-standard">${p.actions.transfer.codeDescription}</p><div class="settings-transfer-actions"><button type="button" id="export-settings" class="text-muted-action">${p.actions.transfer.show}</button><button type="button" id="import-settings" class="text-muted-action">${p.actions.transfer.restore}</button></div><p id="settings-transfer-status" class="text-meta" role="status"></p></section><section class="stat-update-settings settings-subsection"><h3>ステータスの更新設定</h3><p class="text-standard">${s.other.statUpdate.description}</p><div class="field"><label class="label text-standard" for="stat-auto-preference">ステータス更新の提案</label><span class="input-wrap"><select id="stat-auto-preference"><option value="ask">毎回確認する</option><option value="apply">自動で更新する</option><option value="keep">更新しない</option></select></span></div><details class="stat-update-details"><summary class="text-secondary">${s.other.statUpdate.automaticDetailsTitle}</summary><ul class="text-secondary">${s.other.statUpdate.automaticItems.map((x) => `<li>${x}</li>`).join('')}</ul></details><div class="field"><label class="label text-standard" for="stat-reminder-preference">ステータス更新の促し</label><span class="input-wrap"><select id="stat-reminder-preference"><option value="show">毎回促す</option><option value="hide">表示しない</option></select></span></div><details class="stat-update-details"><summary class="text-secondary">${s.other.statUpdate.reminderDetailsTitle}</summary><ul class="text-secondary">${s.other.statUpdate.reminderItems.map((x) => `<li>${x}</li>`).join('')}</ul></details></section></section><section class="panel references" id="view-other" role="tabpanel" data-view-panel="other" hidden>${heading(s.other)}<section class="assumptions"><h3>${s.other.assumptions.title}</h3><ul class="text-standard">${s.other.assumptions.items.map((x) => `<li>${x}</li>`).join('')}</ul></section><section class="creator"><h3>${s.other.creator.title}</h3><p class="text-standard">${s.other.creator.description}</p>${links(s.other.creator.links)}</section>${sourceGroups(s.other)}<div class="history"><h3>${s.other.history.title}</h3>${s.other.history.items.map((x) => `<div class="history-entry text-standard"><span>${x.date}</span><span class="history-text">${x.text}</span></div>`).join('')}</div></section><div class="actions"><button type="button" id="reset-inputs" class="text-muted-action">${p.actions.reset}</button></div><p id="input-save-status" role="status" class="note text-meta"></p></form><aside><div class="result-card"><h2 class="text-on-red">${p.result.title}</h2><div id="rotation-total" class="total text-largest-result text-on-red" aria-live="polite"></div><p class="text-meta text-on-red-muted">${p.result.description}</p><div id="input-error" class="text-error" role="alert" hidden></div></div></aside></div><dialog id="export-settings-dialog" class="settings-dialog card-basic" aria-labelledby="export-settings-title"><h3 id="export-settings-title" tabindex="-1">${p.actions.transfer.show}</h3><label class="text-standard" for="export-settings-code">${p.actions.transfer.exportDescription}</label><textarea id="export-settings-code" rows="7" readonly spellcheck="false"></textarea><div class="settings-dialog-actions"><button type="button" id="copy-settings-code" class="text-muted-action">${p.actions.transfer.copy}</button><button type="button" class="text-muted-action" data-close-settings-dialog>${p.actions.transfer.close}</button></div><p id="export-settings-status" class="text-meta" role="status"></p></dialog><dialog id="import-settings-dialog" class="settings-dialog card-basic" aria-labelledby="import-settings-title"><h3 id="import-settings-title">${p.actions.transfer.restore}</h3><label class="text-standard" for="import-settings-code">${p.actions.transfer.label}</label><textarea id="import-settings-code" rows="7" spellcheck="false" placeholder="${p.actions.transfer.placeholder}"></textarea><div class="settings-dialog-actions"><button type="button" id="restore-settings" class="text-muted-action">${p.actions.transfer.restoreAction}</button><button type="button" class="text-muted-action" data-close-settings-dialog>${p.actions.transfer.close}</button></div><p id="import-settings-status" class="text-meta" role="status"></p></dialog><footer>${p.footer.text} <a class="text-external-link" href="${esc(p.footer.link)}" target="_blank" rel="noopener noreferrer">${esc(p.footer.link)}</a></footer></main>`;
   }
   root.SITE_CONTENT = CONTENT;
   if (typeof document !== 'undefined') {
@@ -1402,7 +1424,7 @@
     panel.dataset.viewPanel = 'optimizer';
     panel.hidden = true;
     panel.innerHTML = heading(CONTENT.page.sections.optimizer) + '<div id="optimizer-content"></div>';
-    document.getElementById('view-other').before(panel);
+    document.getElementById('view-auxiliary').before(panel);
   }
   if (typeof module !== 'undefined') module.exports = CONTENT;
 })(globalThis);
