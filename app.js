@@ -2162,7 +2162,16 @@ artifactOptimizerUI = ArtifactOptimizerUI.mount({
   applyCandidate(values) {
     preserveArtifactRanking = true;
     try {
-      for (const [id, value] of Object.entries(values)) if ($(id)) $(id).value = value;
+      const preset = presetState.hutao,
+        updates = Object.fromEntries(
+          SettingsPresets.GROUPS.hutao
+            .filter((id) => Object.prototype.hasOwnProperty.call(values, id))
+            .map((id) => [id, values[id]])
+        );
+      // Persist only the selected Hu Tao preset, even if render skips saving.
+      Object.assign(preset.values[preset.selected], updates);
+      applyPresetInputs(updates);
+      savePresets();
       clearExportedSettingsCode();
       render();
       previousSettings = read();
