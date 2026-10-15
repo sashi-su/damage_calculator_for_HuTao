@@ -135,11 +135,11 @@
       '</button></div><p class="text-meta">' +
       escape(copy.optional) +
       '</p></div></details>' +
-      '<section class="artifact-section"><h3>' +
+      '<details id="artifact-inventory" class="artifact-section" open><summary class="text-primary-label">' +
       escape(copy.lists) +
-      '</h3><div id="artifact-lists"></div><p id="artifact-storage-status" class="text-meta" role="status">' +
+      '</summary><div id="artifact-lists"></div><p id="artifact-storage-status" class="text-meta" role="status">' +
       escape(copy.storageNote) +
-      '</p></section>' +
+      '</p></details>' +
       '<section id="artifact-ranking" class="artifact-section"><h3>' +
       escape(copy.ranking) +
       '</h3><div class="artifact-actions"><button type="button" id="artifact-calculate">' +
